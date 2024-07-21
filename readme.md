@@ -1,0 +1,1 @@
+--> lick init command
