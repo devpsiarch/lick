@@ -1,5 +1,9 @@
-compile:
-	gcc lick.c -o lick
+all:compile 
+compile:lick.c lick.h
+	gcc lick.c -lz -o lick
+
+init:
+	./lick init
 
 clean:
 	rm lick
