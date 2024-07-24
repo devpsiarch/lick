@@ -1,1 +1,1 @@
---> lick init command
+-> heavilly inspired from the codecrafters website challenge <make your own git> written in C 
