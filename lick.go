@@ -1,12 +1,14 @@
 package main
 
 import (
+	"path/filepath"
 	"crypto/sha1"
 	"compress/zlib"
 	"io"
 	"os"
 	"fmt"
 	"strings"
+	"bytes"
 )
 
 
@@ -106,7 +108,37 @@ func hash_object(option,filepath string){
 
 	sha := (sha1.Sum([]byte(header)))
 	hash := fmt.Sprintf("%x",sha)
-	fmt.Println("the hash is :",hash)
+
+	blobpath := ".lick/objects/"
+
+	for i, c := range hash {
+		blobpath += string(c)
+		if i == 1{
+			blobpath += "/"
+		}
+
+	}
+	fmt.Println("the path is :",blobpath)
+	fmt.Println("the hash is ",hash)
+
+	var buf bytes.Buffer
+	w := zlib.NewWriter(&buf)
+	w.Write([]byte(header))
+	w.Close()
+
+	os.MkdirAll(filepath.Dir(blobpath),os.ModePerm)
+	if(err != nil){
+		fmt.Println("error making all directoriers")
+		return
+	}
+	
+	File,err := os.Create(blobpath)
+	if(err != nil){
+		fmt.Println("can't create file at ",blobpath)
+		return
+	}
+	defer File.Close()
+
 
 }
 
