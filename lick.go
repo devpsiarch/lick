@@ -50,7 +50,7 @@ func cat_file(option,blob_sha string){
 	//decompress the contents of a file
 	//for now it has to be -p
 
-	path := fmt.Sprintf(".git/objects/%v/%v", blob_sha[0:2], blob_sha[2:])
+	path := fmt.Sprintf(".lick/objects/%v/%v", blob_sha[0:2], blob_sha[2:])
 	file,err := os.Open(path)
 	if(err != nil){
 		fmt.Println("cant open file ",path)
@@ -85,22 +85,22 @@ func cat_file(option,blob_sha string){
 }
 
 
-func hash_object(option,filepath string){
+func hash_object(option,FilePath string){
 	if(option != "-w"){
 		fmt.Println("wrong option only <-w> for now!")
 		return
 	}
 	//getting the input of the sha1 fuc
 	
-	file,err := os.ReadFile(filepath)
+	file,err := os.ReadFile(FilePath)
 	if(err != nil){
-		fmt.Println("unable to read file :",filepath)
+		fmt.Println("unable to read file :",FilePath)
 		return
 	}
 
-	stat,err := os.Stat(filepath)
+	stat,err := os.Stat(FilePath)
 	if(err != nil){
-		fmt.Println("unable to get stats of file :",filepath)
+		fmt.Println("unable to get stats of file :",FilePath)
 		return
 	}
 	content := string(file)
@@ -118,8 +118,6 @@ func hash_object(option,filepath string){
 		}
 
 	}
-	fmt.Println("the path is :",blobpath)
-	fmt.Println("the hash is ",hash)
 
 	var buf bytes.Buffer
 	w := zlib.NewWriter(&buf)
@@ -139,6 +137,8 @@ func hash_object(option,filepath string){
 	}
 	defer File.Close()
 
+	File.Write(buf.Bytes())
+	fmt.Println(hash)
 
 }
 
