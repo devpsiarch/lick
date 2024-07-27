@@ -11,38 +11,48 @@ import (
 	"bytes"
 )
 
-
-
-func clean_lick(){
-	err := os.RemoveAll(".lick")
+func bad(err error){
 	if(err != nil){
-		fmt.Println("error cleaning .lick directory")
+		panic(err)
+	}
+}
+
+func direxi(err error,path string){
+	if(err != nil){
+		fmt.Printf("the directory [%s] aleady exist, no panic!\n",path)
 		return
 	}
 }
 
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil
+}
+
+func clean_lick(){
+	err := os.RemoveAll(".lick")
+	bad(err)	
+}
+
 func init_lick(){
 	err := os.Mkdir(".lick",700)
-	if (err != nil){
-		fmt.Println("error creating directory !<mother>")
-		return
-	}
+	direxi(err,".lick")
+
 	err = os.Mkdir(".lick/objects",700)
-	if (err != nil){
-		fmt.Println("error creating directory ! <objects>")
-		return
-	}
+	direxi(err,".lick/objects")	
+
 	err = os.Mkdir(".lick/refs",700)
-	if (err != nil){
-		fmt.Println("error creating directory ! <refs>")
-		return
-	}
+	direxi(err,".lick/refs")
 	
 	file,err := os.Create(".lick/HEAD")
-	if(err != nil){
-		fmt.Println("error creating file ! <HEAD>")
-		return
-	}
+	
+	
+	file,err = os.Create(".lick/index")
+	
+
 	file.Close()
 }
 
@@ -142,6 +152,38 @@ func hash_object(option,FilePath string){
 
 }
 
+func ls_tree(flage,tree_sha string){
+	if(flage != "-null"){
+		fmt.Println("invalid flage ")
+		return
+	}
+	path := fmt.Sprintf(".lick/objects/%v/%v", tree_sha[0:2], tree_sha[2:])
+	file,err := os.Open(path)
+	if(err != nil){
+		fmt.Println("cant open file ",path)
+		return
+	}
+	r, err := zlib.NewReader(io.Reader(file))
+	if(err != nil){
+		fmt.Println("error while reading file");
+		return
+	}
+	str, err := io.ReadAll(r)
+	if(err != nil){
+		fmt.Println("error while reading file");
+		return
+	}
+
+	split := bytes.Split(str, []byte("\x00"))
+
+	use := split[1 : len(split)-1]
+    for _, dByte := range use {
+        splitByte := bytes.Split(dByte, []byte(" "))[1]
+	    fmt.Println(string(splitByte))
+    }
+
+}
+
 func main(){
 	if(len(os.Args) < 2){
 		fmt.Println("invalid command : lick <command> <option>")
@@ -160,6 +202,11 @@ func main(){
 		case "hash-object":
 			//writing object
 			hash_object(os.Args[2],os.Args[3])
+		case "ls-tree":
+			//read tree objects
+			ls_tree(os.Args[2],os.Args[3])
+		default:
+			panic("invalid command: lick <cmd> <parameters>")
 	}
 
 
