@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"path/filepath"
 	"crypto/sha1"
 	"compress/zlib"
@@ -49,9 +50,6 @@ func init_lick(){
 	
 	file,err := os.Create(".lick/HEAD")
 	
-	
-	file,err = os.Create(".lick/index")
-	
 
 	file.Close()
 }
@@ -95,29 +93,24 @@ func cat_file(option,blob_sha string){
 }
 
 
-func hash_object(option,FilePath string){
+func hash_object(option,FilePath string)([20]byte){
 	if(option != "-w"){
-		fmt.Println("wrong option only <-w> for now!")
-		return
+		panic("wrong option only -w for now!!")
 	}
 	//getting the input of the sha1 fuc
 	
 	file,err := os.ReadFile(FilePath)
-	if(err != nil){
-		fmt.Println("unable to read file :",FilePath)
-		return
-	}
+	bad(err)	
 
 	stat,err := os.Stat(FilePath)
-	if(err != nil){
-		fmt.Println("unable to get stats of file :",FilePath)
-		return
-	}
+	bad(err)	
+
 	content := string(file)
 	header := fmt.Sprintf("blob %d\x00%s", stat.Size(), content)
 
 	sha := (sha1.Sum([]byte(header)))
-	hash := fmt.Sprintf("%x",sha)
+	hash := hex.EncodeToString(sha[:])
+
 
 	blobpath := ".lick/objects/"
 
@@ -135,25 +128,21 @@ func hash_object(option,FilePath string){
 	w.Close()
 
 	os.MkdirAll(filepath.Dir(blobpath),os.ModePerm)
-	if(err != nil){
-		fmt.Println("error making all directoriers")
-		return
-	}
+	bad(err)	
 	
 	File,err := os.Create(blobpath)
-	if(err != nil){
-		fmt.Println("can't create file at ",blobpath)
-		return
-	}
+	bad(err)
 	defer File.Close()
 
 	File.Write(buf.Bytes())
 	fmt.Println(hash)
 
+	return sha 
+
 }
 
 func ls_tree(flage,tree_sha string){
-	if(flage != "-null"){
+	if(flage != "--name-only"){
 		fmt.Println("invalid flage ")
 		return
 	}
@@ -175,13 +164,33 @@ func ls_tree(flage,tree_sha string){
 	}
 
 	split := bytes.Split(str, []byte("\x00"))
-
+	//there still an implimentation for displaying more stuff
+	//i cant be bothered ...
 	use := split[1 : len(split)-1]
     for _, dByte := range use {
         splitByte := bytes.Split(dByte, []byte(" "))[1]
 	    fmt.Println(string(splitByte))
     }
 
+}
+
+
+func write_tree(dir string) {
+    entries, err := os.ReadDir(dir)
+    bad(err)
+
+    for _, entry := range entries {
+		if(entry.Name() == ".git" || entry.Name() == ".lick"){
+			continue
+		}
+		fullPath := dir + "/" + entry.Name() // Construct the full path for the entry
+        if entry.IsDir() {
+            fmt.Println("directory :", entry.Name())
+            write_tree(fullPath) // Now passing the full path
+        } else {
+            fmt.Println("file :", entry.Name())
+        }
+    }
 }
 
 func main(){
@@ -201,10 +210,12 @@ func main(){
 			cat_file(os.Args[2],os.Args[3])
 		case "hash-object":
 			//writing object
-			hash_object(os.Args[2],os.Args[3])
+			fmt.Sprintf("%x",hash_object(os.Args[2],os.Args[3]))
 		case "ls-tree":
 			//read tree objects
 			ls_tree(os.Args[2],os.Args[3])
+		case "write-tree":
+			write_tree(".")
 		default:
 			panic("invalid command: lick <cmd> <parameters>")
 	}
